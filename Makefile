@@ -1,6 +1,6 @@
 
 
-.PHONY: cpp go java rust
+.PHONY: cpp go java python rust
 
 all: cpp go java python rust
 
