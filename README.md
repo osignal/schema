@@ -45,7 +45,7 @@ table Signal {
 Each signal has a reference to a description of the source which
 acquired that signal.
 
-### `Source
+### `Source`
 ```
 table Source {
   id64:        ulong      (id: 0); // stable ID for cross-file joins
