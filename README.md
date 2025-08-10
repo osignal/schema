@@ -1,4 +1,4 @@
-# OSignal schema
+# [OSignal schema](https://github.com/osignal/schema)
 Open format for storing and transferring high-frequency device telemetry.
 
 Based on [Flatbuffers](https://flatbuffers.dev/), a widely-used open-source technology.
