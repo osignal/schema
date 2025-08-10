@@ -1,0 +1,79 @@
+// message.fbs
+namespace telemetry;
+
+// Bitwise per-sample quality flags.
+enum DPFlags: uint (bit_flags) {
+  None            = 0,
+  Clipped         = 1,
+  Saturated       = 2,
+  Interpolated    = 4,
+  Dropped         = 8,
+  OutOfRange      = 16
+}
+
+// Declared value type per Signal.
+// DataPoint.value remains a double; cast uncommon types on read.
+enum ValueType: ubyte {
+  Float64 = 0,
+  Int64   = 1,
+  Bool    = 2
+}
+
+// One inline sample. Points to a Signal by index in Message.signals.
+struct DataPoint {
+  signal_idx:  uint   (id: 0); // index into Message.signals
+  ts_unix_ns:  ulong  (id: 1); // timestamp (ns)
+  value:       double (id: 2); // primary numeric value (Float64 hot path)
+  flags:       uint   (id: 3); // DPFlags bitfield
+}
+
+// Optional key/value tags for metadata.
+table KeyValue {
+  key:   string (id: 0);
+  value: string (id: 1);
+}
+
+// Shared acquisition source (device/process/origin), encoded at the end.
+table Source {
+  id64:        ulong      (id: 0); // stable ID for cross-file joins
+  name:        string     (id: 1); // human label or hostname
+  description: string     (id: 2);
+  hw_model:    string     (id: 3);
+  hw_serial:   string     (id: 4);
+  sw_version:  string     (id: 5);
+  tags:        [KeyValue] (id: 6);
+}
+
+// Canonical signal description written AFTER data points.
+// Each Signal references a Source by index in Message.sources.
+table Signal {
+  source_idx:          uint         (id: 0); // index into Message.sources
+  id64:                ulong        (id: 1); // optional stable ID (cross-file)
+  name:                string       (id: 2);
+  unit:                string       (id: 3); // e.g., "V", "A", "°C"
+  description:         string       (id: 4);
+  start_time_unix_ns:  ulong        (id: 5);
+
+  value_type:          ValueType    (id: 6);  // Float64/Int64/Bool
+  value_scale:         double    = 1 (id: 7); // optional: value' = value * scale + offset
+  value_offset:        double    = 0 (id: 8);
+
+  sample_rate_hz:      double       (id: 9); // nominal; 0 if irregular
+ 
+  tags:                [KeyValue]   (id: 10);
+ }
+
+// One message in a log-of-messages stream.
+// Contains a contiguous batch of points, plus their metadata footer.
+table Message {
+  schema_version:  ushort        = 1 (id: 0);
+  created_unix_ns: ulong            (id: 1);
+
+  data_points:     [DataPoint]      (id: 2); // flat, all points in this batch
+
+  signals:         [Signal]         (id: 3); // referenced by DataPoint.signal_idx
+  sources:         [Source]         (id: 4); // referenced by Signal.source_idx
+}
+
+root_type Message;
+file_identifier "TMSG";
